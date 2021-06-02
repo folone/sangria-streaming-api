@@ -3,7 +3,7 @@ package sangria.streaming
 import scala.language.higherKinds
 
 import scala.annotation.implicitNotFound
-import scala.concurrent.Future
+import com.twitter.util.Future
 
 @implicitNotFound(
   msg =

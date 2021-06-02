@@ -2,10 +2,10 @@ package sangria.streaming
 
 import scala.language.higherKinds
 
-import scala.concurrent.{ExecutionContext, Future}
+import com.twitter.util.Future
 
 object future {
-  class FutureSubscriptionStream(implicit ec: ExecutionContext) extends SubscriptionStream[Future] {
+  class FutureSubscriptionStream extends SubscriptionStream[Future] {
     def supported[T[_]](other: SubscriptionStream[T]): Boolean =
       other.isInstanceOf[FutureSubscriptionStream]
 
@@ -13,29 +13,33 @@ object future {
 
     def singleFuture[T](value: Future[T]): Future[T] = value
 
-    def single[T](value: T): Future[T] = Future.successful(value)
+    def single[T](value: T): Future[T] = Future.value(value)
 
     def mapFuture[A, B](source: Future[A])(fn: A => Future[B]): Future[B] =
       source.flatMap(fn)
 
     def first[T](s: Future[T]): Future[T] = s
 
-    def failed[T](e: Throwable): Future[T] = Future.failed(e)
+    def failed[T](e: Throwable): Future[T] = Future.exception(e)
 
     def onComplete[Ctx, Res](result: Future[Res])(op: => Unit): Future[Res] =
       result
         .map { x => op; x }
-        .recover { case e => op; throw e }
+        .handle { case e => op; throw e }
 
     def flatMapFuture[Ctx, Res, T](future: Future[T])(resultFn: T => Future[Res]): Future[Res] =
       future.flatMap(resultFn)
 
-    def merge[T](streams: Vector[Future[T]]): Future[T] = Future.firstCompletedOf(streams)
+    def merge[T](streams: Vector[Future[T]]): Future[T] = {
+      Future.select(streams).flatMap { case (res, _) =>
+        Future.const(res)
+      }
+    }
 
     def recover[T](stream: Future[T])(fn: Throwable => T): Future[T] =
-      stream.recover { case e => fn(e) }
+      stream.handle { case e => fn(e) }
   }
 
-  implicit def futureSubscriptionStream(implicit ec: ExecutionContext): FutureSubscriptionStream =
+  implicit def futureSubscriptionStream: FutureSubscriptionStream =
     new FutureSubscriptionStream
 }

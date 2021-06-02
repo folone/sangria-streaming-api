@@ -15,12 +15,17 @@ homepage := Some(url("http://sangria-graphql.org"))
 licenses := Seq(
   "Apache License, ASL Version 2.0" → url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6", "3.0.0")
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6"/*, "3.0.0"*/)
 ThisBuild / scalaVersion := crossScalaVersions.value.last
 ThisBuild / githubWorkflowPublishTargetBranches := List()
 ThisBuild / githubWorkflowBuildPreamble ++= List(
   WorkflowStep.Sbt(List("scalafmtCheckAll"), name = Some("Check formatting")),
   WorkflowStep.Sbt(List("mimaReportBinaryIssues"), name = Some("Check binary compatibility"))
+)
+
+
+libraryDependencies := Seq(
+  "com.twitter" %% "util-core" % "21.5.0",
 )
 
 scalacOptions ++= Seq("-deprecation", "-feature")
